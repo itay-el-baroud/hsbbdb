@@ -1,0 +1,11 @@
+package com.callshield.app;
+
+import android.content.Context;
+import android.content.res.Configuration;
+
+public class ThemeHelper {
+    public static boolean isNightMode(Context context) {
+        int currentNightMode = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return currentNightMode == Configuration.UI_MODE_NIGHT_YES;
+    }
+}
