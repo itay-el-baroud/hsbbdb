@@ -1,0 +1,97 @@
+package com.callshield.app;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+public class StorageManager {
+
+    private static final String PREFS_NAME = "callshield_storage";
+    private static final String KEY_LOGS = "attempt_logs";
+    private static final String KEY_SMART = "smart_block";
+    private static StorageManager instance;
+    private final SharedPreferences prefs;
+
+    private StorageManager(Context context) {
+        prefs = context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    public static synchronized StorageManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new StorageManager(context);
+        }
+        return instance;
+    }
+
+    public void addBlocked(String number, String label) {
+        prefs.edit().putString("num_" + number, label).apply();
+    }
+
+    public void removeBlocked(String number) {
+        prefs.edit().remove("num_" + number).apply();
+    }
+
+    public boolean isBlocked(String number) {
+        return number != null && prefs.contains("num_" + number);
+    }
+
+    public List<String[]> getAllBlocked() {
+        List<String[]> list = new ArrayList<>();
+        for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
+            if (entry.getKey().startsWith("num_")) {
+                list.add(new String[]{entry.getKey().substring(4), String.valueOf(entry.getValue())});
+            }
+        }
+        return list;
+    }
+
+    public boolean isSmartBlockEnabled() {
+        return prefs.getBoolean(KEY_SMART, true);
+    }
+
+    public int getAttemptCount(String number) {
+        return prefs.getInt("count_" + number, 0);
+    }
+
+    public void logAttempt(String number, String type) {
+        int count = getAttemptCount(number) + 1;
+        prefs.edit().putInt("count_" + number, count).apply();
+        try {
+            JSONArray array = new JSONArray(prefs.getString(KEY_LOGS, "[]"));
+            JSONObject obj = new JSONObject();
+            obj.put("number", number);
+            obj.put("type", type);
+            obj.put("time", System.currentTimeMillis());
+            obj.put("count", count);
+            array.put(obj);
+            prefs.edit().putString(KEY_LOGS, array.toString()).apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    public List<String> getLogs() {
+        List<String> result = new ArrayList<>();
+        try {
+            JSONArray array = new JSONArray(prefs.getString(KEY_LOGS, "[]"));
+            SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault());
+            for (int i = array.length() - 1; i >= 0; i--) {
+                JSONObject obj = array.getJSONObject(i);
+                String line = obj.optString("type") + " | " + obj.optString("number")
+                        + " | attempts: " + obj.optInt("count")
+                        + " | " + format.format(new Date(obj.optLong("time")));
+                result.add(line);
+            }
+        } catch (Exception ignored) {
+        }
+        return result;
+    }
+}
