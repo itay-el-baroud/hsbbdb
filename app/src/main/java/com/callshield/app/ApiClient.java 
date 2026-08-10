@@ -1,32 +1,39 @@
 package com.callshield.app;
 
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import retrofit2.Retrofit;
-import retrofit2.converter.moshi.MoshiConverterFactory;
+import okhttp3.Response;
 
 public class ApiClient {
-    private static final String BASE_URL = "https://media-note.ct.ws/";
 
-    private static Retrofit getRetrofit(String token) {
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(chain -> {
-                    Request original = chain.request();
-                    Request request = original.newBuilder()
-                            .header("Authorization", "Bearer " + token)
-                            .build();
-                    return chain.proceed(request);
-                })
-                .build();
-
-        return new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .client(client)
-                .addConverterFactory(MoshiConverterFactory.create())
-                .build();
+    public interface ProfileCallback {
+        void onResult(String data, String error);
     }
 
-    public static <T> T createService(Class<T> serviceClass, String token) {
-        return getRetrofit(token).create(serviceClass);
+    public static void fetchProfile(String token, final ProfileCallback callback) {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url("https://media-note.ct.ws/profile.php")
+                .header("Authorization", "Bearer " + token)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                callback.onResult(null, e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    callback.onResult(response.body() != null ? response.body().string() : "", null);
+                } else {
+                    callback.onResult(null, "Server error: " + response.code());
+                }
+            }
+        });
     }
 }
