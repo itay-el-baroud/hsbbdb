@@ -1,0 +1,51 @@
+package com.callshield.app;
+
+import android.os.Bundle;
+import android.view.MenuItem;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+public class HomeActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_home);
+
+        BottomNavigationView navView = findViewById(R.id.nav_view);
+        navView.setOnItemSelectedListener(mOnNavigationItemSelectedListener);
+
+        // Default fragment
+        loadFragment(new BlockedNumbersFragment());
+    }
+
+    private final BottomNavigationView.OnItemSelectedListener mOnNavigationItemSelectedListener =
+            new BottomNavigationView.OnItemSelectedListener() {
+                @Override
+                public boolean onItemSelected(@NonNull MenuItem item) {
+                    Fragment fragment = null;
+                    int id = item.getItemId();
+                    if (id == R.id.navigation_blocked) {
+                        fragment = new BlockedNumbersFragment();
+                    } else if (id == R.id.navigation_logs) {
+                        fragment = new LogsFragment();
+                    } else if (id == R.id.navigation_settings) {
+                        fragment = new SettingsFragment();
+                    }
+                    return loadFragment(fragment);
+                }
+            };
+
+    private boolean loadFragment(Fragment fragment) {
+        if (fragment != null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.nav_host_fragment, fragment)
+                    .commit();
+            return true;
+        }
+        return false;
+    }
+}
