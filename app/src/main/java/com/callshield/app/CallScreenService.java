@@ -1,24 +1,32 @@
 package com.callshield.app;
 
-import android.telecom.Call;
-import android.telecom.InCallService;
-import android.util.Log;
+import android.net.Uri;
+import android.telecom.CallScreeningService;
 
-public class CallScreenService extends InCallService {
+public class CallScreenService extends CallScreeningService {
+
     @Override
-    public void onCallAdded(Call call) {
-        String number = call.getDetails().getHandle().getSchemeSpecificPart();
-        if (StorageManager.getInstance(this).isBlocked(number)) {
-            call.disconnect();
-            Log.d("CallShield", "Blocked incoming call from: " + number);
-            NotificationHelper.sendBlockNotification(this, number);
-        } else {
-            super.onCallAdded(call);
+    public void onScreenCall(android.telecom.Call.Details details) {
+        Uri handle = details.getHandle();
+        String number = handle == null ? "" : handle.getSchemeSpecificPart();
+        StorageManager storage = StorageManager.getInstance(this);
+
+        boolean blocked = storage.isBlocked(number);
+        if (!blocked && storage.isSmartBlockEnabled() && storage.getAttemptCount(number) >= 3) {
+            storage.addBlocked(number, "Spam");
+            blocked = true;
         }
-    }
 
-    @Override
-    public void onCallRemoved(Call call) {
-        super.onCallRemoved(call);
+        if (blocked) {
+            storage.logAttempt(number, "call");
+            NotificationHelper.sendBlockNotification(this, number);
+        }
+
+        CallResponse response = new CallResponse.Builder()
+                .setDisallowCall(blocked)
+                .setSkipCallLog(false)
+                .setSkipNotification(false)
+                .build();
+        respondToCall(details, response);
     }
 }
