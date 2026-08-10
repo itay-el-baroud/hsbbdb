@@ -1,0 +1,14 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_blocked"
+        android:icon="@drawable/ic_phone"
+        android:title="@string/blocked_numbers" />
+    <item
+        android:id="@+id/navigation_logs"
+        android:icon="@drawable/ic_logs"
+        android:title="@string/call_logs" />
+    <item
+        android:id="@+id/navigation_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/settings" />
+</menu>
